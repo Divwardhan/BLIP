@@ -61,7 +61,7 @@ lm_losses = []
 
 
 # training params
-epochs = 3
+epochs = 7
 
 
 for epoch in range(epochs):
