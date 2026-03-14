@@ -23,7 +23,7 @@ class ViTBlock(nn.Module):
         self.mlp =FeedForward(dim , hidden_dim)
 
     def forward(self,x):
-        x_attn, _ = self.attn(self.norm1(x))
+        x_attn = self.attn(self.norm1(x))
         x =x+ x_attn
         x = x+self.mlp(self.norm2(x))
         return x

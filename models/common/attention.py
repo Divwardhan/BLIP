@@ -11,10 +11,15 @@ class SelfAttention(nn.Module):
         self.wk = nn.Linear(input_vec_dim , output_vec_dim , bias = False)
         self.wv = nn.Linear(input_vec_dim , output_vec_dim , bias = False)
 
-    def forward(self , x):
-        q = self.wq(x)
-        k = self.wk(x)
-        v = self.wv(x)
+    def forward(self , q ,k = None , v=None):
+        if k is None:
+            k=q
+        if v is None:
+            v=q
+
+        q = self.wq(q)
+        k = self.wk(k)
+        v = self.wv(v)
 
         att_score = (q @ torch.transpose(k, -2,-1)) / k.shape[-1]**0.5
 
@@ -40,8 +45,8 @@ class MultiHeadAttention(nn.Module):
 
         self.out_proj = nn.Linear(output_vec_dim , output_vec_dim)
 
-    def forward(self , x):
-        head_outputs = [head(x) for head in self.heads]
+    def forward(self , q,k=None,v= None):
+        head_outputs = [head(q,k,v) for head in self.heads]
 
         concat_heads = torch.cat(head_outputs , dim=-1)
 
