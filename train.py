@@ -1,6 +1,7 @@
 import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader
+import matplotlib.pyplot as plt
 
 from models.blip_model import BLIP
 
@@ -13,9 +14,12 @@ from visualisation.itm_predictions import plot_itm_predictions
 from visualisation.training_curves import plot_training_curves
 
 
+# enable inline plotting (important for colab)
+plt.ion()
+
+
 # device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 torch.cuda.empty_cache()
 
 
@@ -40,14 +44,12 @@ class DummyDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
 
         image = torch.randn(3,224,224)
-
         tokens = torch.randint(0,30522,(20,))
 
         return image, tokens
 
 
 dataset = DummyDataset()
-
 dataloader = DataLoader(dataset, batch_size=4, shuffle=True)
 
 
@@ -80,8 +82,9 @@ for epoch in range(epochs):
 
         optimizer.zero_grad()
 
+
         # mixed precision forward
-        with torch.cuda.amp.autocast():
+        with torch.cuda.amp.autocast(enabled=(device.type=="cuda")):
 
             outputs = model(images, decoder_input)
 
@@ -90,9 +93,7 @@ for epoch in range(epochs):
             caption_logits = outputs["caption_logits"]
 
             loss_itc = contrastive_loss(itc_logits)
-
             loss_itm = itm_loss(itm_logits, itm_labels)
-
             loss_lm = caption_loss(caption_logits, caption_targets)
 
             loss = loss_itc + loss_itm + loss_lm
@@ -101,15 +102,13 @@ for epoch in range(epochs):
         # backward
         scaler.scale(loss).backward()
 
-        # optional gradient clipping
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
 
         scaler.step(optimizer)
-
         scaler.update()
 
 
-        # log
+        # logging
         itc_losses.append(loss_itc.item())
         itm_losses.append(loss_itm.item())
         lm_losses.append(loss_lm.item())
@@ -129,9 +128,15 @@ for epoch in range(epochs):
         if step % 50 == 0:
 
             plot_similarity_matrix(itc_logits)
-
             plot_itm_predictions(itm_logits)
+
+            # ensure figures render in colab
+            plt.show()
+            plt.pause(0.001)
+            plt.close('all')
 
 
 # training curves
 plot_training_curves(itc_losses, itm_losses, lm_losses)
+
+plt.show()
