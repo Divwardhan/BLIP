@@ -63,7 +63,6 @@ lm_losses = []
 # training params
 epochs = 7
 
-
 for epoch in range(epochs):
 
     model.train()
@@ -73,34 +72,65 @@ for epoch in range(epochs):
         images = images.to(device)
         tokens = tokens.to(device)
 
-        # teacher forcing shift
+        batch_size = images.shape[0]
+
+        # caption teacher forcing
         decoder_input = tokens[:, :-1]
         caption_targets = tokens[:, 1:]
 
-        # ITM labels (dummy)
-        batch_size = images.shape[0]
-        itm_labels = torch.ones(batch_size).long().to(device)
-
         optimizer.zero_grad()
 
-
-        # mixed precision forward
+        ################################
+        # CONTRASTIVE + CAPTION FORWARD
+        ################################
         with torch.amp.autocast(device_type=device.type):
 
             outputs = model(images, decoder_input)
 
             itc_logits = outputs["contrastive_logits"]
-            itm_logits = outputs["itm_logits"]
             caption_logits = outputs["caption_logits"]
 
             loss_itc = contrastive_loss(itc_logits)
-            loss_itm = itm_loss(itm_logits, itm_labels)
             loss_lm = caption_loss(caption_logits, caption_targets)
 
-            loss = loss_itc + loss_itm + loss_lm
+        ################################
+        # ITM NEGATIVE SAMPLING
+        ################################
 
+        perm = torch.randperm(batch_size)
 
-        # backward
+        negative_tokens = tokens[perm]
+
+        itm_images = torch.cat([images, images], dim=0)
+        itm_tokens = torch.cat([tokens, negative_tokens], dim=0)
+
+        itm_labels = torch.cat([
+            torch.ones(batch_size),
+            torch.zeros(batch_size)
+        ]).long().to(device)
+
+        ################################
+        # ITM FORWARD
+        ################################
+
+        with torch.amp.autocast(device_type=device.type):
+
+            itm_outputs = model(itm_images, itm_tokens[:, :-1])
+
+            itm_logits = itm_outputs["itm_logits"]
+
+            loss_itm = itm_loss(itm_logits, itm_labels)
+
+        ################################
+        # TOTAL LOSS
+        ################################
+
+        loss = loss_itc + loss_itm + loss_lm
+
+        ################################
+        # BACKPROP
+        ################################
+
         scaler.scale(loss).backward()
 
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -108,12 +138,13 @@ for epoch in range(epochs):
         scaler.step(optimizer)
         scaler.update()
 
+        ################################
+        # LOGGING
+        ################################
 
-        # logging
         itc_losses.append(loss_itc.item())
         itm_losses.append(loss_itm.item())
         lm_losses.append(loss_lm.item())
-
 
         if step % 20 == 0:
 
@@ -124,8 +155,10 @@ for epoch in range(epochs):
                 f"LM {loss_lm:.3f}"
             )
 
+        ################################
+        # VISUALIZATION
+        ################################
 
-        # visualization
         if step % 50 == 0:
 
             plot_similarity_matrix(itc_logits)
@@ -135,7 +168,7 @@ for epoch in range(epochs):
             plt.pause(0.001)
             plt.close('all')
 
-
+            
 fig, ax = plt.subplots(figsize=(8,5))
 
 ax.plot(itc_losses, label="ITC Loss")
