@@ -14,7 +14,7 @@ from visualisation.training_curves import plot_training_curves
 
 
 # device
-device = torch.device("cpu" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 torch.cuda.empty_cache()
 
