@@ -49,7 +49,7 @@ dataset = VRSBenchDataset(
 
 dataloader = DataLoader(
     dataset,
-    batch_size=4,
+    batch_size=2,
     shuffle=True
 )
 
