@@ -17,7 +17,7 @@ class VisionEncoder(nn.Module):
     ):
 
         super().__init__()
-
+        self.embed_dim = embed_dim
         self.patch_embed = PatchEmbedding(
             img_size=img_size,
             patch_size=patch_size,

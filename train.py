@@ -13,8 +13,11 @@ from visualisation.similarity_matrix import plot_similarity_matrix
 from visualisation.itm_predictions import plot_itm_predictions
 from visualisation.training_curves import plot_training_curves
 
+# IMPORT YOUR DATASET
+from datasets.vrsbench_dataset import VRSBenchDataset
 
-# enable inline plotting (important for colab)
+
+# enable inline plotting
 plt.ion()
 
 
@@ -35,22 +38,20 @@ optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-2)
 scaler = torch.cuda.amp.GradScaler()
 
 
-# dummy dataset (replace later)
-class DummyDataset(torch.utils.data.Dataset):
+########################################
+# VRSBench Dataset
+########################################
 
-    def __len__(self):
-        return 200
+dataset = VRSBenchDataset(
+    root_dir="../../input/datasets/divwardhanagrawal/vrs-bench",
+    split="train"
+)
 
-    def __getitem__(self, idx):
-
-        image = torch.randn(3,224,224)
-        tokens = torch.randint(0,30522,(20,))
-
-        return image, tokens
-
-
-dataset = DummyDataset()
-dataloader = DataLoader(dataset, batch_size=4, shuffle=True)
+dataloader = DataLoader(
+    dataset,
+    batch_size=4,
+    shuffle=True
+)
 
 
 # logging
@@ -130,7 +131,6 @@ for epoch in range(epochs):
             plot_similarity_matrix(itc_logits)
             plot_itm_predictions(itm_logits)
 
-            # ensure figures render in colab
             plt.show()
             plt.pause(0.001)
             plt.close('all')
@@ -146,6 +146,6 @@ ax.legend()
 ax.set_title("Training Curves")
 
 plt.tight_layout()
-plt.show()  
+plt.show()
 
 plt.show()

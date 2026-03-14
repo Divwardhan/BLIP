@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import torch
+
 
 def plot_similarity_matrix(sim):
 
@@ -9,7 +11,6 @@ def plot_similarity_matrix(sim):
     im = ax.imshow(sim, cmap="viridis")
     fig.colorbar(im)
 
-    ax.set_title("Image-Text Similarity Matrix")
+    ax.set_title("Image-Text Similarity")
 
-    plt.tight_layout()
-    plt.show()     
+    return fig
