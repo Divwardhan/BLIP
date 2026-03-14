@@ -43,7 +43,7 @@ scaler = torch.cuda.amp.GradScaler()
 ########################################
 
 dataset = VRSBenchDataset(
-    root_dir="../../input/datasets/divwardhanagrawal/vrs-bench",
+    root_dir="kaggle/input/datasets/divwardhanagrawal/vrs-bench",
     split="train"
 )
 
