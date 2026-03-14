@@ -1,20 +1,15 @@
 import matplotlib.pyplot as plt
 
+def plot_training_curves(itc, itm, lm):
 
-def plot_training_curves(itc_losses, itm_losses, lm_losses):
+    fig, ax = plt.subplots(figsize=(8,5))
 
-    plt.figure(figsize=(8,5))
+    ax.plot(itc, label="ITC Loss")
+    ax.plot(itm, label="ITM Loss")
+    ax.plot(lm, label="Caption Loss")
 
-    plt.plot(itc_losses, label="ITC Loss")
-    plt.plot(itm_losses, label="ITM Loss")
-    plt.plot(lm_losses, label="LM Loss")
-
-    plt.xlabel("Training Step")
-    plt.ylabel("Loss")
-
-    plt.title("BLIP Training Losses")
-
-    plt.legend()
+    ax.legend()
+    ax.set_title("Training Curves")
 
     plt.tight_layout()
-    plt.show()
+    plt.show()   

@@ -1,19 +1,15 @@
 import matplotlib.pyplot as plt
-import seaborn as sns
 
+def plot_similarity_matrix(sim):
 
-def plot_similarity_matrix(sim_matrix):
+    sim = sim.detach().cpu().numpy()
 
-    sim = sim_matrix.detach().cpu()
+    fig, ax = plt.subplots(figsize=(6,6))
 
-    plt.figure(figsize=(6,6))
+    im = ax.imshow(sim, cmap="viridis")
+    fig.colorbar(im)
 
-    sns.heatmap(sim, cmap="viridis")
+    ax.set_title("Image-Text Similarity Matrix")
 
-    plt.title("Image-Text Similarity Matrix")
-
-    plt.xlabel("Text")
-    plt.ylabel("Image")
-
-    plt.show()
-
+    plt.tight_layout()
+    plt.show()     

@@ -1,22 +1,14 @@
-import torch
 import matplotlib.pyplot as plt
-
+import torch
 
 def plot_itm_predictions(logits):
 
-    probs = torch.softmax(logits, dim=-1)
+    probs = torch.softmax(logits, dim=1)[:,1].detach().cpu().numpy()
 
-    match_probs = probs[:,1].detach().cpu()
+    fig, ax = plt.subplots(figsize=(6,4))
 
-    plt.figure(figsize=(6,4))
-
-    plt.bar(range(len(match_probs)), match_probs)
-
-    plt.ylim(0,1)
-
-    plt.title("ITM Match Probabilities")
-    plt.xlabel("Sample")
-    plt.ylabel("P(match)")
+    ax.hist(probs, bins=20)
+    ax.set_title("ITM Match Probabilities")
 
     plt.tight_layout()
-    plt.show()
+    plt.show()    # REQUIRED
