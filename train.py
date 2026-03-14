@@ -84,7 +84,7 @@ for epoch in range(epochs):
 
 
         # mixed precision forward
-        with torch.cuda.amp.autocast(enabled=(device.type=="cuda")):
+        with torch.amp.autocast(device_type=device.type):
 
             outputs = model(images, decoder_input)
 
