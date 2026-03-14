@@ -136,7 +136,16 @@ for epoch in range(epochs):
             plt.close('all')
 
 
-# training curves
-plot_training_curves(itc_losses, itm_losses, lm_losses)
+fig, ax = plt.subplots(figsize=(8,5))
+
+ax.plot(itc_losses, label="ITC Loss")
+ax.plot(itm_losses, label="ITM Loss")
+ax.plot(lm_losses, label="Caption Loss")
+
+ax.legend()
+ax.set_title("Training Curves")
+
+plt.tight_layout()
+plt.show()  
 
 plt.show()
