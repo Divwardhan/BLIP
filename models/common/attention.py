@@ -1,69 +1,52 @@
-import torch 
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class SelfAttention(nn.Module):
-    def __init__(self, input_vec_dim , output_vec_dim ):
-        super().__init__()
-        torch.manual_seed(0)
-
-        self.wq = nn.Linear(input_vec_dim, output_vec_dim , bias = False)
-        self.wk = nn.Linear(input_vec_dim , output_vec_dim , bias = False)
-        self.wv = nn.Linear(input_vec_dim , output_vec_dim , bias = False)
-
-    def forward(self , q ,k = None , v=None):
-        if k is None:
-            k=q
-        if v is None:
-            v=q
-
-        q = self.wq(q)
-        k = self.wk(k)
-        v = self.wv(v)
-
-        att_score = (q @ torch.transpose(k, -2,-1)) / k.shape[-1]**0.5
-
-        attn_score_softmax = F.softmax(att_score, dim = -1)
-
-        weighted_values = attn_score_softmax @ v
-
-        return weighted_values
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self , input_vec_dim , output_vec_dim , num_heads):
+    def __init__(self, input_vec_dim, output_vec_dim, num_heads):
         super().__init__()
 
-        assert output_vec_dim%num_heads==0
+        if output_vec_dim % num_heads != 0:
+            raise ValueError("output_vec_dim must be divisible by num_heads")
 
         self.num_heads = num_heads
+        self.head_dim = output_vec_dim // num_heads
 
-        self.head_dim = output_vec_dim//num_heads
+        self.q_proj = nn.Linear(input_vec_dim, output_vec_dim, bias=False)
+        self.k_proj = nn.Linear(input_vec_dim, output_vec_dim, bias=False)
+        self.v_proj = nn.Linear(input_vec_dim, output_vec_dim, bias=False)
+        self.out_proj = nn.Linear(output_vec_dim, output_vec_dim)
 
-        self.heads = nn.ModuleList(
-            [SelfAttention(input_vec_dim , self.head_dim) for _ in range(num_heads)]
-        )
+    def _split_heads(self, x):
+        batch, seq_len, dim = x.shape
+        x = x.view(batch, seq_len, self.num_heads, self.head_dim)
+        return x.transpose(1, 2)
 
-        self.out_proj = nn.Linear(output_vec_dim , output_vec_dim)
+    def forward(self, q, k=None, v=None, attn_mask=None):
+        if k is None:
+            k = q
+        if v is None:
+            v = q
 
-    def forward(self , q,k=None,v= None):
-        head_outputs = [head(q,k,v) for head in self.heads]
+        q = self._split_heads(self.q_proj(q))
+        k = self._split_heads(self.k_proj(k))
+        v = self._split_heads(self.v_proj(v))
 
-        concat_heads = torch.cat(head_outputs , dim=-1)
+        attn_scores = (q @ k.transpose(-2, -1)) / (self.head_dim ** 0.5)
 
-        output = self.out_proj(concat_heads)
+        if attn_mask is not None:
+            if attn_mask.dim() == 2:
+                attn_mask = attn_mask.unsqueeze(0).unsqueeze(0)
+            elif attn_mask.dim() == 3:
+                attn_mask = attn_mask.unsqueeze(1)
+            attn_scores = attn_scores.masked_fill(attn_mask, float("-inf"))
 
-        return output
-    
-x = torch.randn(1, 5, 4)  
-# batch = 2
-# sequence length = 5
-# embedding dimension = 16
-print("Inout X")
-print(x)
+        attn_weights = F.softmax(attn_scores, dim=-1)
+        context = attn_weights @ v
 
-mha = MultiHeadAttention(input_vec_dim=4, output_vec_dim=4, num_heads=4)
+        context = context.transpose(1, 2).contiguous()
+        batch, seq_len, _, _ = context.shape
+        context = context.view(batch, seq_len, self.num_heads * self.head_dim)
 
-out = mha(x)
-
-print("Output")
-print(out)
+        return self.out_proj(context)
