@@ -1,12 +1,10 @@
 import torch.nn.functional as F
 
-def caption_loss(logits, targets):
 
-    B, L, V = logits.shape
+def caption_loss(logits, targets, ignore_index=0):
+    bsz, seq_len, vocab = logits.shape
 
-    logits = logits.reshape(B * L, V)
-    targets = targets.reshape(B * L)
+    logits = logits.reshape(bsz * seq_len, vocab)
+    targets = targets.reshape(bsz * seq_len)
 
-    loss = F.cross_entropy(logits, targets)
-
-    return loss
+    return F.cross_entropy(logits, targets, ignore_index=ignore_index)
